@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#3B82F6" />
+  <title>四六级估分器</title>
+  <link rel="stylesheet" href="css/app.css" />
+</head>
+<body>
+  <!-- ============ 首页 ============ -->
+  <section id="view-home" class="view active">
+    <header class="hero">
+      <h1 class="hero-title">四六级估分器</h1>
+      <p class="hero-sub">加权赋分 · 710 分制 · 预估通过概率</p>
+    </header>
+
+    <div class="history-entry" onclick="App.goHistory()">
+      <span>📋 历史记录</span><span class="arrow">›</span>
+    </div>
+
+    <div class="card">
+      <h2 class="card-title">1. 选择考试类型</h2>
+      <div class="type-grid">
+        <div id="type-cet4" class="type-card" onclick="App.pickType('cet4')">
+          <div class="type-name">四级 <span class="type-full">CET-4</span></div>
+          <div class="type-line">听力：短篇新闻 7 · 长对话 8 · 篇章 10</div>
+          <div class="type-line">阅读：词汇 10 · 长篇 10 · 仔细 10</div>
+        </div>
+        <div id="type-cet6" class="type-card" onclick="App.pickType('cet6')">
+          <div class="type-name">六级 <span class="type-full">CET-6</span></div>
+          <div class="type-line">听力：长对话 8 · 篇章 7 · 讲座 10</div>
+          <div class="type-line">阅读：词汇 10 · 长篇 10 · 仔细 10</div>
+        </div>
+      </div>
+      <p class="hint">四级与六级听力题型结构不同，请按实际报考类型选择</p>
+    </div>
+
+    <div class="card">
+      <h2 class="card-title">2. 当年考试难度</h2>
+      <div class="chip-row">
+        <div id="diff-easy" class="chip" onclick="App.pickDifficulty('easy')">
+          <div class="chip-label">简单</div><div class="chip-value">×1.10</div>
+        </div>
+        <div id="diff-normal" class="chip" onclick="App.pickDifficulty('normal')">
+          <div class="chip-label">中等</div><div class="chip-value">×1.00</div>
+        </div>
+        <div id="diff-hard" class="chip" onclick="App.pickDifficulty('hard')">
+          <div class="chip-label">困难</div><div class="chip-value">×0.90</div>
+        </div>
+        <div id="diff-custom" class="chip" onclick="App.pickDifficulty('custom')">
+          <div class="chip-label">自定义</div><div class="chip-value">手动</div>
+        </div>
+      </div>
+      <div id="coef-row" class="coef-row hidden">
+        <label class="coef-label">难度系数</label>
+        <input id="coef-input" class="coef-input" type="number" step="0.01" min="0.85" max="1.15" placeholder="0.85 ~ 1.15" />
+        <p class="hint full">根据当年考题整体难度手动填写，范围 0.85~1.15</p>
+      </div>
+      <p class="hint" id="diff-hint">难度系数由官方常模数据决定，简单 ×1.10 · 中等 ×1.00 · 困难 ×0.90</p>
+    </div>
+
+    <div class="card">
+      <h2 class="card-title">3. 估分模式</h2>
+      <div class="mode-list">
+        <div id="mode-conservative" class="mode-item" onclick="App.pickMode('conservative')">
+          <div class="mode-name">保守</div><div class="mode-desc">写作·翻译自评等级下调一档</div>
+        </div>
+        <div id="mode-neutral" class="mode-item" onclick="App.pickMode('neutral')">
+          <div class="mode-name">中性</div><div class="mode-desc">写作·翻译自评等级保持不变</div>
+        </div>
+        <div id="mode-optimistic" class="mode-item" onclick="App.pickMode('optimistic')">
+          <div class="mode-name">乐观</div><div class="mode-desc">写作·翻译自评等级上调一档</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <button class="btn-primary" onclick="App.startEstimate()">开始估分</button>
+      <p class="hint center">预估结果仅供参考，最终以官方成绩为准</p>
+    </div>
+  </section>
+
+  <!-- ============ 输入页 ============ -->
+  <section id="view-input" class="view">
+    <div class="summary-bar">
+      <div class="summary-item"><div class="summary-label">考试类型</div><div id="s-type" class="summary-value"></div></div>
+      <div class="summary-item"><div class="summary-label">难度系数</div><div id="s-diff" class="summary-value"></div></div>
+      <div class="summary-item"><div class="summary-label">估分模式</div><div id="s-mode" class="summary-value"></div></div>
+    </div>
+
+    <div class="card">
+      <div class="part-header"><div class="part-name">听力 · Listening</div><div class="part-weight">满分 248.5 分（35%）</div></div>
+      <p class="hint">请填写各小组答对的题数</p>
+      <div id="listen-groups"></div>
+      <div id="listen-sum" class="group-summary"></div>
+    </div>
+
+    <div class="card">
+      <div class="part-header"><div class="part-name">阅读 · Reading</div><div class="part-weight">满分 248.5 分（35%）</div></div>
+      <p class="hint">请填写各小组答对的题数</p>
+      <div id="read-groups"></div>
+      <div id="read-sum" class="group-summary"></div>
+    </div>
+
+    <div class="card">
+      <div class="part-header"><div class="part-name">写作 · Writing</div><div class="part-weight">满分 106.5 分（15%）</div></div>
+      <p class="hint">根据自我感觉选择估分档位（档位对应原始分比例）</p>
+      <div class="level-group" id="writing-levels"></div>
+    </div>
+
+    <div class="card">
+      <div class="part-header"><div class="part-name">翻译 · Translation</div><div class="part-weight">满分 106.5 分（15%）</div></div>
+      <p class="hint">根据自我感觉选择估分档位（档位对应原始分比例）</p>
+      <div class="level-group" id="trans-levels"></div>
+    </div>
+
+    <div class="footer">
+      <button class="btn-primary" onclick="App.submitEstimate()" id="submit-btn">提交估分</button>
+      <p class="link center" onclick="App.goHome()">← 重新选择考试类型</p>
+    </div>
+  </section>
+
+  <!-- ============ 结果页 ============ -->
+  <section id="view-result" class="view">
+    <div class="card score-card" id="score-card"></div>
+
+    <div class="card">
+      <h2 class="card-title">各部分得分</h2>
+      <div id="sections-list"></div>
+    </div>
+
+    <div class="card">
+      <h2 class="card-title">得分率雷达图</h2>
+      <div class="radar-wrap"><canvas id="radar-canvas" width="300" height="280"></canvas></div>
+      <p class="hint center">雷达图各轴为"赋分后得分 ÷ 部分满分"的得分率</p>
+    </div>
+
+    <div class="card">
+      <h2 class="card-title">备考建议</h2>
+      <div id="advice-box"></div>
+      <p class="hint">建议仅供参考，请结合历年真题针对性训练</p>
+    </div>
+
+    <div class="actions">
+      <button class="btn-outline" onclick="App.saveRecord()">💾 保存记录</button>
+      <button class="btn-primary" onclick="App.restart()">🔄 重新估分</button>
+    </div>
+    <p class="link center history-link" onclick="App.goHistory()">查看我的历史记录 ›</p>
+  </section>
+
+  <!-- ============ 历史记录 ============ -->
+  <section id="view-history" class="view">
+    <div class="source-bar">
+      <span>本地缓存模式 · 最多保留 100 条</span>
+      <span class="clear-btn" id="clear-btn" onclick="App.clearAll()">清空</span>
+    </div>
+    <div id="history-list"></div>
+    <p class="hint center footer-tip">点击卡片查看详情 · 与上次同类型记录对比</p>
+  </section>
+
+  <script src="js/score.js"></script>
+  <script src="js/record.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
